@@ -1,9 +1,13 @@
 import matplotlib.pyplot as plt
-import numpy as np
-
+import math
+from collections import deque
 from matplotlib.patches import Rectangle
 
-MAP_SIZE = 10
+MAP_SIZE = 20
+
+def pow2(a):
+    return a*a
+
 
 # 点的定义
 class Vector2:
@@ -25,10 +29,36 @@ class Vector2:
 class Vector2Node:
     frontNode = None
     childNodes = None
+    pos = None
+    g = 0
+    h = 0
+    D = 1
 
     def __init__(self, pos):
         self.pos = pos
         self.childNodes = []
+
+    def iterateFrontNode(self, includeSelf):
+        node = self
+        if includeSelf:
+            yield node
+        while node != None:
+            node = node.frontNode
+            if node != None:
+                yield node
+
+    def calcGH(self, targetPos):
+        # g经过的距离
+        for node in self.iterateFrontNode(False):
+            self.g += 1
+        self.h = (abs(targetPos.x - self.pos.x) + abs(targetPos.y - self.pos.y)) * self.D
+        # self.g = pow2(self.g)
+
+        # h预估剩余的距离
+        #self.h = math.sqrt(pow2(targetPos.x - self.pos.x) + pow2(targetPos.y - self.pos.y))
+
+    def f(self):
+        return self.g + self.h
 
 
 # 地图定义，0是空位，1是障碍
@@ -47,10 +77,10 @@ class Map:
 
     def process(self):
         self.tree = Vector2Node(self.startPoint)
-        willProcessNodes = []
+        willProcessNodes = deque()
         willProcessNodes.append(self.tree)
         while self.foundEndNode == None and len(willProcessNodes) != 0:
-            node = willProcessNodes.pop()
+            node = self.simpleLeftPop(willProcessNodes)
 
             if self.addNodeCallback != None:
                 self.addNodeCallback(node.pos)
@@ -59,12 +89,28 @@ class Map:
             for neighbor in neighbors:
                 childNode = Vector2Node(neighbor)
                 childNode.frontNode = node
-                node.childNodes.append(childNode)
-                willProcessNodes.insert(0, childNode)
+                childNode.calcGH(self.endPoint)
 
-                if neighbor == endPoint :
+                node.childNodes.append(childNode)
+                willProcessNodes.append(childNode)
+
+                if neighbor == self.endPoint :
                     self.foundEndNode = childNode
-                
+    
+    def simpleLeftPop(self, willProcessNodes):
+        return willProcessNodes.popleft()
+    
+    def popLowGHNode(self, willProcessNodes):
+        foundNode = None
+        for node in willProcessNodes:
+            if foundNode == None:
+                foundNode = node
+            else:
+                if node.f() < foundNode.f():
+                    foundNode = node
+        if foundNode != None:
+            willProcessNodes.remove(foundNode)
+        return foundNode
 
     def getNeighbors(self, pos):
         result = []
@@ -96,8 +142,6 @@ class Map:
                     nodes.append(nodeTmp)
         return False
 
-print("-------------------------")
-
 GetBackGroundGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, edgecolor = 'gray', facecolor = 'w')
 GetObstacleGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'gray')
 GetStartEndGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'red')
@@ -109,14 +153,13 @@ ax.set_xlim([0, MAP_SIZE])
 ax.set_ylim([0, MAP_SIZE])
 
 
-
-startPoint = Vector2(0, 0)
-endPoint = Vector2(8, 8)
+startPoint = Vector2(5, 5)
+endPoint = Vector2(15, 15)
 map = Map(startPoint, endPoint)
-for i in range(1, 10):
-    map.map[5][i] = 1
-for i in range(0, 9):
-    map.map[2][i] = 1
+for i in range(2, 12):
+    map.map[10][i] = 1
+for i in range(10, 19):
+    map.map[13][i] = 1
 
 for x in range(MAP_SIZE):
     for y in range(MAP_SIZE):
@@ -147,6 +190,9 @@ else:
         node = node.frontNode
     
     for nodeTmp in nodes[::-1]:
+        if nodeTmp.pos == startPoint or nodeTmp.pos == endPoint:
+            continue
+        plt.pause(0.05)
         ax.add_patch(GetFoundPathGrid(nodeTmp.pos.x, nodeTmp.pos.y))
 
 plt.ioff()
