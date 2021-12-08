@@ -60,13 +60,13 @@ class Map:
         return result
     
     def isObstacle(self, pos):
-        return map[pos.y][pos.x] == 1
+        return self.map[pos.y][pos.x] == 1
 
     def isOpenedPos(self, pos):
         if self.tree == None:
             return True
         nodes = []
-        nodes.append(tree)
+        nodes.append(self.tree)
         while nodes.count != 0:
             node = nodes.pop()
             if node.pos == pos:
@@ -78,7 +78,7 @@ class Map:
         if self.tree == None:
             return False
         nodes = []
-        nodes.append(tree)
+        nodes.append(self.tree)
         while nodes.count != 0:
             node = nodes.pop()
             if node.pos == self.endPoint:
@@ -99,19 +99,16 @@ print(map.map)
 
 
 
-# GetBackGroundGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, edgecolor = 'gray', facecolor = 'w')
-# GetObstacleGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'gray')
+GetBackGroundGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, edgecolor = 'gray', facecolor = 'w')
+GetObstacleGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'gray')
 
 
-# ax = plt.gca()
-# ax.set_xlim([0, MAP_SIZE])
-# ax.set_ylim([0, MAP_SIZE])
+ax = plt.gca()
+ax.set_xlim([0, MAP_SIZE])
+ax.set_ylim([0, MAP_SIZE])
 
-# for x in range(MAP_SIZE):
-#     for y in range(MAP_SIZE):
-#         ax.add_patch(GetBackGroundGrid(x, y))
-
-
-
+for x in range(MAP_SIZE):
+    for y in range(MAP_SIZE):
+        ax.add_patch(GetBackGroundGrid(x, y))
 
 plt.show()
