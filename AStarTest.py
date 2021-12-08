@@ -17,31 +17,39 @@ class Vector2:
     def __add__(self, other):
         return Vector2(self.x + other.x, self.y + other.y)
 
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
 
 # 树结构，用于回溯路径
 class Vector2Node:
     frontNode = None
-    childNodes = []
+    childNodes = None
 
     def __init__(self, pos):
         self.pos = pos
+        self.childNodes = []
 
 
 # 地图定义，0是空位，1是障碍
 class Map:
-    map = [[0]*MAP_SIZE]*MAP_SIZE
     tree = None
+    foundEndNode = None
     addNodeCallback = None
 
     def __init__(self, startPoint, endPoint):
         self.startPoint = startPoint
         self.endPoint = endPoint
+        row = [0]*MAP_SIZE
+        self.map = []
+        for i in range(MAP_SIZE):
+            self.map.append(row.copy())
 
     def process(self):
         self.tree = Vector2Node(self.startPoint)
         willProcessNodes = []
         willProcessNodes.append(self.tree)
-        while not self.isFoundEnd or willProcessNodes.count == 0:
+        while self.foundEndNode == None and len(willProcessNodes) != 0:
             node = willProcessNodes.pop()
 
             if self.addNodeCallback != None:
@@ -54,77 +62,94 @@ class Map:
                 node.childNodes.append(childNode)
                 willProcessNodes.insert(0, childNode)
 
+                if neighbor == endPoint :
+                    self.foundEndNode = childNode
+                
+
     def getNeighbors(self, pos):
         result = []
         neighborDises = [ Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]
         for neighborDis in neighborDises:
             newPos = pos + neighborDis
-            if self.isObstacle(newPos) or self.isOpenedPos(newPos) :
+            if self.isOutBound(newPos) or self.isObstacle(newPos) or self.isClosedPos(newPos):
                 continue
             result.append(newPos)
         return result
+
+    def isOutBound(self, pos):
+        return pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE
     
     def isObstacle(self, pos):
         return self.map[pos.y][pos.x] == 1
 
-    def isOpenedPos(self, pos):
-        if self.tree == None:
-            return True
-        nodes = []
-        nodes.append(self.tree)
-        while nodes.count != 0:
-            node = nodes.pop()
-            if node.pos == pos:
-                return False
-            nodes.extend(node.childNodes)
-        return True
-
-    def isFoundEnd(self):
+    def isClosedPos(self, pos):
         if self.tree == None:
             return False
         nodes = []
         nodes.append(self.tree)
-        while nodes.count != 0:
+        while len(nodes) != 0:
             node = nodes.pop()
-            if node.pos == self.endPoint:
+            if node.pos == pos:
                 return True
-            nodes.extend(node.childNodes)
+            if node.childNodes != None:
+                for nodeTmp in node.childNodes:
+                    nodes.append(nodeTmp)
         return False
 
-
-
-startPoint = Vector2(0, 0)
-endPoint = Vector2(8, 8)
-
-map = Map(startPoint, endPoint)
-print(map.map)
-
+print("-------------------------")
 
 GetBackGroundGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, edgecolor = 'gray', facecolor = 'w')
 GetObstacleGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'gray')
 GetStartEndGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'red')
 GetPathGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'green')
-
+GetFoundPathGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'blue')
 
 ax = plt.gca()
 ax.set_xlim([0, MAP_SIZE])
 ax.set_ylim([0, MAP_SIZE])
 
+
+
+startPoint = Vector2(0, 0)
+endPoint = Vector2(8, 8)
+map = Map(startPoint, endPoint)
+for i in range(1, 10):
+    map.map[5][i] = 1
+for i in range(0, 9):
+    map.map[2][i] = 1
+
 for x in range(MAP_SIZE):
     for y in range(MAP_SIZE):
-        ax.add_patch(GetBackGroundGrid(x, y))
+        if map.map[y][x] == 0:
+            ax.add_patch(GetBackGroundGrid(x, y))
+        else:
+            ax.add_patch(GetObstacleGrid(x, y))
 
-ax.add_patch(GetStartEndGrid(map.startPoint.x, map.startPoint.x))
-ax.add_patch(GetStartEndGrid(map.endPoint.x, map.endPoint.x))
+ax.add_patch(GetStartEndGrid(map.startPoint.x, map.startPoint.y))
+ax.add_patch(GetStartEndGrid(map.endPoint.x, map.endPoint.y))
 
+
+plt.ion()
 def AddPathGrid(pos):
-    # plt.pause(0.05)
-    ax.add_patch(GetPathGrid(pos.x, pos.x))
+    plt.pause(0.05)
+    ax.add_patch(GetPathGrid(pos.x, pos.y))
 
 map.addNodeCallback = AddPathGrid
 map.process()
 
+if map.foundEndNode == None:
+    print("没有找到终点")
+else:
+    nodes = []
+    node = map.foundEndNode
+    while node != None:
+        nodes.append(node)
+        node = node.frontNode
+    
+    for nodeTmp in nodes[::-1]:
+        ax.add_patch(GetFoundPathGrid(nodeTmp.pos.x, nodeTmp.pos.y))
+
+plt.ioff()
+
 plt.show()
-
-
 
