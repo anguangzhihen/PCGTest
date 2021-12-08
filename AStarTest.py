@@ -31,23 +31,28 @@ class Vector2Node:
 class Map:
     map = [[0]*MAP_SIZE]*MAP_SIZE
     tree = None
+    addNodeCallback = None
 
     def __init__(self, startPoint, endPoint):
         self.startPoint = startPoint
         self.endPoint = endPoint
 
-        self.tree = Vector2Node(startPoint)
+    def process(self):
+        self.tree = Vector2Node(self.startPoint)
         willProcessNodes = []
         willProcessNodes.append(self.tree)
         while not self.isFoundEnd or willProcessNodes.count == 0:
             node = willProcessNodes.pop()
+
+            if self.addNodeCallback != None:
+                self.addNodeCallback(node.pos)
+
             neighbors = self.getNeighbors(node.pos)
             for neighbor in neighbors:
                 childNode = Vector2Node(neighbor)
                 childNode.frontNode = node
                 node.childNodes.append(childNode)
                 willProcessNodes.insert(0, childNode)
-
 
     def getNeighbors(self, pos):
         result = []
@@ -95,12 +100,10 @@ map = Map(startPoint, endPoint)
 print(map.map)
 
 
-
-
-
-
 GetBackGroundGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, edgecolor = 'gray', facecolor = 'w')
 GetObstacleGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'gray')
+GetStartEndGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'red')
+GetPathGrid = lambda x, y: Rectangle((x, y), width = 1, height = 1, color = 'green')
 
 
 ax = plt.gca()
@@ -111,4 +114,17 @@ for x in range(MAP_SIZE):
     for y in range(MAP_SIZE):
         ax.add_patch(GetBackGroundGrid(x, y))
 
+ax.add_patch(GetStartEndGrid(map.startPoint.x, map.startPoint.x))
+ax.add_patch(GetStartEndGrid(map.endPoint.x, map.endPoint.x))
+
+def AddPathGrid(pos):
+    # plt.pause(0.05)
+    ax.add_patch(GetPathGrid(pos.x, pos.x))
+
+map.addNodeCallback = AddPathGrid
+map.process()
+
 plt.show()
+
+
+
