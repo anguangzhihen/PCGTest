@@ -4,6 +4,7 @@ from collections import deque
 from matplotlib.patches import Rectangle
 
 MAP_SIZE = 20
+SQRT_2 = math.sqrt(2)
 
 def pow2(a):
     return a*a
@@ -48,10 +49,15 @@ class Vector2Node:
                 yield node
 
     def calcGH(self, targetPos):
+        self.g = self.frontNode.g + math.sqrt(pow2(self.pos.x - self.frontNode.pos.x) + pow2(self.pos.y - self.frontNode.pos.y))
+        dx = abs(targetPos.x - self.pos.x)
+        dy = abs(targetPos.y - self.pos.y)
+        self.h = (dx + dy + (SQRT_2 - 2) * min(dx, dy)) * self.D 
+
         # g经过的距离
-        for node in self.iterateFrontNode(False):
-            self.g += 1
-        self.h = (abs(targetPos.x - self.pos.x) + abs(targetPos.y - self.pos.y)) * self.D
+        # for node in self.iterateFrontNode(False):
+        #     self.g += 1
+        # self.h = (abs(targetPos.x - self.pos.x) + abs(targetPos.y - self.pos.y)) * self.D
         # self.g = pow2(self.g)
 
         # h预估剩余的距离
@@ -80,7 +86,7 @@ class Map:
         willProcessNodes = deque()
         willProcessNodes.append(self.tree)
         while self.foundEndNode == None and len(willProcessNodes) != 0:
-            node = self.simpleLeftPop(willProcessNodes)
+            node = self.popLeftNode(willProcessNodes)
 
             if self.addNodeCallback != None:
                 self.addNodeCallback(node.pos)
@@ -97,9 +103,24 @@ class Map:
                 if neighbor == self.endPoint :
                     self.foundEndNode = childNode
     
-    def simpleLeftPop(self, willProcessNodes):
+    # 广度优先
+    def popLeftNode(self, willProcessNodes):
         return willProcessNodes.popleft()
     
+    # dijkstra
+    def popLowGNode(self, willProcessNodes):
+        foundNode = None
+        for node in willProcessNodes:
+            if foundNode == None:
+                foundNode = node
+            else:
+                if node.g < foundNode.g:
+                    foundNode = node
+        if foundNode != None:
+            willProcessNodes.remove(foundNode)
+        return foundNode
+    
+    # A*
     def popLowGHNode(self, willProcessNodes):
         foundNode = None
         for node in willProcessNodes:
@@ -114,7 +135,7 @@ class Map:
 
     def getNeighbors(self, pos):
         result = []
-        neighborDises = [ Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]
+        neighborDises = [ Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1), Vector2(0, -1), Vector2(1, -1)]
         for neighborDis in neighborDises:
             newPos = pos + neighborDis
             if self.isOutBound(newPos) or self.isObstacle(newPos) or self.isClosedPos(newPos):
