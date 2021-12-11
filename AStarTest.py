@@ -31,7 +31,7 @@ class Vector2Node:
     pos = None  # 当前的x、y位置
     frontNode = None    # 当前节点的前置节点
     childNodes = None   # 当前节点的后置节点们
-    g = 0   # 起点到当前界面所经过的距离
+    g = 0   # 起点到当前节点所经过的距离
     h = 0   # 启发值
     D = 1
 
