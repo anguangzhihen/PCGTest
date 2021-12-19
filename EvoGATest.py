@@ -20,11 +20,11 @@ def func(x):
 def getFitness(pred):
     return pred + 1e-3 - min(pred)
 
-# 选择父代，适应度越大的个体越容易被选中
+# 选择父代，使用适合比例选择（FPS）机制
 def select(pop, fitness):
     return np.random.choice(pop, size = POP_SIZE, replace = True, p = fitness / fitness.sum())
 
-# 交叉
+# 重组
 def crossover(parent, pop):
     # 选择一个交叉的个体
     other = np.random.choice(pop)
@@ -34,7 +34,7 @@ def crossover(parent, pop):
     np.random.shuffle(cross)
     return (parent & cross[0]) + (other & cross[1])
 
-# 突变
+# 突变（本问题中可以使用格雷码以保证连续整数在二进制变化中的汉明距离也为1）
 def mutate(child):
     for i in range(DNA_SIZE):
         # 获得突变位置
@@ -44,7 +44,7 @@ def mutate(child):
     return child
 
 
-# 初始化种群，从[0, MAX_X]中随机选出4个个体
+# 初始化种群，从[0, MAX_X]中随机选出
 pop = np.random.randint(1, size = POP_SIZE)
 
 plt.ion()
@@ -56,6 +56,7 @@ x = np.linspace(0, MAX_X, 200)
 plt.plot(x, func(x))
 
 for i in range(N_GENERATIONS):
+    # 获取适应度
     fitness = getFitness(pop)
 
     if 'sca' in globals():
@@ -65,12 +66,16 @@ for i in range(N_GENERATIONS):
 
     print(pop, ", max:", max(pop))
 
+    # 父代选择
     pop = select(pop, fitness)
     popCopy = pop.copy()
     for popIndex in range(len(pop)):
         parent = pop[popIndex]
+        # 重组，使用单点交叉
         child = crossover(parent, popCopy)
+        # 突变，使用位翻转
         child = mutate(child)
+        # 生存选择，使用基于年龄的替代策略，但父代和子代数量相同，所以将所有子代替换成父代
         pop[popIndex] = child
 
 plt.ioff()
